@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="masthead" style="background-image: url('assets/img/home-bg.jpg')">
+    <div class="container position-relative px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="site-heading text-center">
+                    <h1>CREATE VIBLO</h1>
+                    <span class="subheading">A Blog Theme by Start Bootstrap</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="p-4 shadow rounded-3" style="background-color: #f8f9fa;">
+                <h2 class="text-center mb-4">Tạo Bài Viết Mới</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        <label for="id_title" class="form-label">Title:</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="id_content" class="form-label">Content:</label>
+                        {{ form.content }}
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="id_image" class="form-label">Image:</label>
+                        {{ form.image }}
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="id_category" class="form-label">Category:</label>
+                        <select name="category" id="id_category" class="form-control rounded-3">
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <h3>Tags:</h3>
+                        <ul class="list-unstyled">
+                            {% for tag in post.tags.all %}
+                                <li>{{ tag.name }}</li>
+                            {% empty %}
+                                <li>No tags</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary rounded-pill">Lưu Bài Viết</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{% url 'post_list' %}" class="btn btn-secondary rounded-pill">Xem Danh Sách Bài Viết</a>
+    </div>
+</div>
+
+{% endblock %}
