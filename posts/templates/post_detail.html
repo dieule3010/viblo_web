@@ -6,7 +6,7 @@
         <p>{{ post.content }}</p>
 
         {% if post.image %}
-            <img src="{{ post.image.url }}" alt="Image for {{ post.title }}" class="img-fluid mb-4 rounded shadow">
+        <img src="{{ post.image.url }}" alt="Image for {{ post.title }}" class="img-fluid mb-4 rounded shadow">
         {% endif %}
     </div>
 
@@ -14,71 +14,110 @@
     <form action="{% url 'react_post' post.id %}" method="post" class="d-flex gap-3 mb-4">
         {% csrf_token %}
         <button type="submit" name="react_type" value="like" class="btn btn-primary shadow-sm rounded-pill">
-            👍 Like <span class="badge bg-light text-primary ms-1">{{ like_count }}</span>
+            👍{{like_count}}
         </button>
         <button type="submit" name="react_type" value="dislike" class="btn btn-danger shadow-sm rounded-pill">
-            👎 Dislike <span class="badge bg-light text-danger ms-1">{{ dislike_count }}</span>
+            👎{{ dislike_count }}
         </button>
     </form>
 
     <hr>
 
     <!-- Display Comments -->
-    <h3>Comments:</h3>
     <ul class="list-unstyled">
         {% for comment in comments %}
-            <li class="mb-4 border-bottom pb-3">
-                <div class="comment-box p-3 bg-light rounded shadow-sm">
-                    <p><strong>{{ comment.author.username }}</strong>: {{ comment.content }}</p>
-                    <p class="text-muted mb-1"><small>{{ comment.created_at }}</small></p>
-
-                    {% if comment.author == request.user %}
-                        <form action="{% url 'delete_comment' post.id comment.id %}" method="post" class="d-inline-block">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm rounded" onclick="return confirm('Bạn có chắc chắn muốn xóa comment này?');">
-                                <i class="fas fa-trash-alt"></i> Xóa
-                            </button>
-                        </form>
-                    {% endif %}
+        <li class="mb-4 border-bottom pb-3">
+            <div class="comment-box p-3 bg-light rounded shadow-sm">
+                <p><strong>{{ comment.author.username }}</strong>: {{ comment.content }}</p>
+                <p class="text-muted mb-1"><small>{{ comment.created_at }}</small></p>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleReplies({{ comment.id }})">
+                    Hiển thị câu trả lời
+                </button>
+                {% if comment.author == request.user %}
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleCommentOptions({{ comment.id }})">...</button>
+                <div id="comment-options-{{ comment.id }}" class="comment-options mt-1" style="display: none;">
+                    <form action="{% url 'delete_comment' post.id comment.id %}" method="post" class="d-inline-block">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm rounded"
+                            onclick="return confirm('Bạn có chắc chắn muốn xóa comment này?');">
+                            <i class="fas fa-trash-alt"></i> Xóa
+                        </button>
+                    </form>
+                    <button class="btn btn-sm btn-outline-primary shadow-sm rounded"
+                        onclick="toggleEditForm({{comment.id}})">
+                        <i class="fas fa-edit"></i> Chỉnh sửa
+                    </button>
                 </div>
+                <div id="edit-form-{{ comment.id }}" class="edit-form mt-2" style="display: none;">
+                    <form action="{% url 'edit_comment' post.id comment.id %}" method="post">
+                        {% csrf_token %}
+                        <div class="input-group shadow-sm">
+                            <textarea name="content" class="form-control" rows="2">{{ comment.content }}</textarea>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Lưu</button>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
 
-                <!-- Reply Form -->
-                <form action="{% url 'add_reply' post.id comment.id %}" method="post" class="mt-2">
-                    {% csrf_token %}
-                    <div class="input-group shadow-sm">
-                        <textarea name="content" class="form-control rounded-start" rows="2" placeholder="Reply..."></textarea>
-                        <button type="submit" class="btn btn-secondary rounded-end"><i class="fas fa-reply"></i> Reply</button>
-                    </div>
-                </form>
+            <!-- Reply Form -->
+            <form action="{% url 'add_reply' post.id comment.id %}" method="post" class="mt-2">
+                {% csrf_token %}
+                <div class="input-group shadow-sm">
+                    <textarea name="content" class="form-control rounded-start" rows="2" placeholder="Reply..."></textarea>
+                    <button type="submit" class="btn btn-secondary rounded-end"><i class="fas fa-reply"></i> Reply</button>
+                </div>
+            </form>
 
-                <!-- Display Replies -->
-                <ul class="list-unstyled mt-3 ps-4 border-start">
-                    {% for reply in comment.replies.all %}
-                        <li class="mb-2">
-                            <div class="reply-box p-2 bg-light rounded shadow-sm">
-                                <p><strong>{{ reply.author.username }}</strong>: {{ reply.content }}</p>
-                                <p class="text-muted mb-0"><small>{{ reply.created_at }}</small></p>
-                            </div>
+            <!-- Display Replies -->
+            <ul id="replies-{{ comment.id }}" class="list-unstyled mt-3 ps-4 border-start" style="display: none;">
+                {% for reply in comment.replies.all %}
+                <li class="mb-2">
+                    <div class="reply-box p-2 bg-light rounded shadow-sm">
+                        <p><strong>{{ reply.author.username }}</strong>: {{ reply.content }}</p>
+                        <p class="text-muted mb-0"><small>{{ reply.created_at }}</small></p>
+                        <form action="{% url 'add_reply' post.id reply.id %}" method="post" class="mt-2">
+                            {% csrf_token %}
+                            <textarea name="content" rows="2" placeholder="Reply to this reply"></textarea>
+                            <button type="submit">Reply</button>
+                        </form>
 
                         {% if reply.author == request.user %}
-                        <form action="{% url 'delete_reply' post.id reply.id %}" method="post" class="d-inline-block">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm rounded" onclick="return confirm('Bạn có chắc chắn muốn xóa reply này?');">
-                                <i class="fas fa-trash-alt"></i> Xóa
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleReplyOptions({{ reply.id }})">...</button>
+                        <div id="reply-options-{{ reply.id }}" class="reply-options mt-1" style="display: none;">
+                            <form action="{% url 'delete_reply' post.id reply.id %}" method="post" class="d-inline-block mt-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm rounded"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa reply này?');">
+                                    <i class="fas fa-trash-alt"></i> Xóa
+                                </button>
+                            </form>
+                            <button class="btn btn-sm btn-outline-primary shadow-sm rounded"
+                                onclick="toggleReplyEditForm({{ reply.id }})">
+                                <i class="fas fa-edit"></i> Chỉnh sửa
                             </button>
-                        </form>
-                    {% endif %}
+                        </div>
+                        <div id="edit-reply-form-{{ reply.id }}" class="edit-form mt-2" style="display: none;">
+                            <form action="{% url 'edit_reply' post.id reply.id %}" method="post">
+                                {% csrf_token %}
+                                <div class="input-group shadow-sm">
+                                    <textarea name="content" class="form-control" rows="2">{{ reply.content }}</textarea>
+                                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Lưu</button>
+                                </div>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
                 </li>
-                    {% endfor %}
-                </ul>
-            </li>
+                {% endfor %}
+            </ul>
+        </li>
         {% empty %}
-            <li class="text-muted">No comments yet.</li>
+        <li class="text-muted">No comments yet.</li>
         {% endfor %}
     </ul>
 
     <!-- Add Comment Form -->
-    <h4 class="mt-4">Add a Comment:</h4>
     <form action="{% url 'add_comment' post.id %}" method="post" class="mt-3">
         {% csrf_token %}
         <div class="input-group shadow-sm">
@@ -88,7 +127,47 @@
     </form>
 
     <div class="mt-4">
-        <a href="{% url 'post_list' %}" class="btn btn-outline-secondary shadow-sm"><i class="fas fa-arrow-left"></i> Quay lại danh sách bài viết</a>
+        <a href="{% url 'post_list' %}" class="btn btn-outline-secondary shadow-sm"><button type="button" class="btn btn-light">Quay lại danh sách bài viết</button></a>
     </div>
 </div>
+
+<script>
+    function toggleEditForm(commentId) {
+        const editForm = document.getElementById(`edit-form-${commentId}`);
+        editForm.style.display = editForm.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleReplyEditForm(replyId) {
+        const form = document.getElementById(`edit-reply-form-${replyId}`);
+        form.style.display = form.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleReplies(commentId) {
+        const repliesList = document.getElementById(`replies-${commentId}`);
+        repliesList.style.display = repliesList.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleCommentOptions(commentId) {
+        const options = document.getElementById(`comment-options-${commentId}`);
+        options.style.display = options.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleReplyOptions(replyId) {
+        const options = document.getElementById(`reply-options-${replyId}`);
+        options.style.display = options.style.display === "none" ? "block" : "none";
+    }
+    function toggleReplyForm(commentId, username) {
+    var form = document.getElementById("reply-form-" + commentId);
+    var textarea = document.getElementById("reply-textarea-" + commentId);
+
+    if (form.style.display === "none") {
+        form.style.display = "block";
+        textarea.value = "@" + username + " ";
+        textarea.focus();
+    } else {
+        form.style.display = "none";
+    }
+}
+
+</script>
 {% endblock %}

@@ -1,6 +1,7 @@
 # posts/forms.py
 from django import forms
 from .models import Post
+from .models import Comment
 from. models import Tag
 from. models import Category
 
@@ -18,3 +19,13 @@ class PostForm(forms.ModelForm):
         fields = ['title', 'content', 'image', 'category']  # Bao gồm trường image
 class CategoryForm(forms.ModelForm):
     pass
+class CommentForm(forms.ModelForm):
+    content = forms.CharField(widget=forms.Textarea(attrs={
+        'placeholder': 'Enter your comment...',
+        'rows': 3,
+        'class': 'form-control',
+    }))
+
+    class Meta:
+        model = Comment
+        fields = ['content']

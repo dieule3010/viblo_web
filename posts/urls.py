@@ -1,13 +1,17 @@
 from django.urls import path
-from .views import create_post
-from .views import post_list
-from .views import post_detail
-from .views import delete_post
-from .views import add_comment
-from .views import react_post
-from .views import add_reply
-from .views import delete_comment
-from .views import delete_reply
+from .views import (
+    create_post,
+    post_list,
+    post_detail,
+    delete_post,
+    add_comment,
+    react_post,
+    add_reply,
+    delete_comment,
+    delete_reply,
+    edit_reply,
+    edit_comment
+)
 
 urlpatterns = [
     path('create/', create_post, name='create_post'),  # URL cho chức năng viết bài
@@ -17,6 +21,9 @@ urlpatterns = [
     path('post_detail/<int:post_id>/comment', add_comment, name='add_comment'),
     path('post_detail/<int:post_id>/react', react_post, name='react_post'),
     path('post_detail/<int:post_id>/comment/<int:comment_id>/add_reply', add_reply, name='add_reply'),
+    path('post_detail/<int:post_id>/comment/<int:comment_id>/add_reply', add_reply, name='add_reply'),
     path('post_detail/<int:post_id>/comment/<int:comment_id>/delete_comment', delete_comment, name='delete_comment'),
     path('post_detail/<int:post_id>/reply/<int:reply_id>/delete_reply', delete_reply, name='delete_reply'),
+    path('post_detail/<int:post_id>/reply/<int:reply_id>/edit_reply', edit_reply, name='edit_reply'),
+    path('post_detail/<int:post_id>/comment/<int:comment_id>/edit_comment', edit_comment, name='edit_comment'),
 ]

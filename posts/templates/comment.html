@@ -1,0 +1,23 @@
+<li class="mb-4">
+  <div class="comment-box">
+      <p><strong>{{ comment.author.username }}</strong>: {{ comment.content }}</p>
+      <small class="text-muted">{{ comment.created_at }}</small>
+
+      <!-- Reply Button and Form -->
+      <button onclick="toggleReplyForm({{ comment_id }})">Reply</button>
+      <form id="reply-form-{{ comment.id }}" action="{% url 'add_reply' post.id comment.id %}" method="post" style="display: none;">
+          {% csrf_token %}
+          <textarea name="content" rows="2" placeholder="Enter your reply"></textarea>
+          <button type="submit">Submit</button>
+      </form>
+
+      <!-- Recursive Replies -->
+      {% if comment.replies.all %}
+          <ul class="list-unstyled ms-4">
+              {% for reply in comment.replies.all %}
+                  {% include "comment.html" with comment=reply %}
+              {% endfor %}
+          </ul>
+      {% endif %}
+  </div>
+</li>

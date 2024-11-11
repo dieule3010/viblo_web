@@ -1,6 +1,7 @@
 # posts/views.py
 from django.shortcuts import render, redirect
 from .forms import PostForm
+from .forms import CommentForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import Post
@@ -91,12 +92,20 @@ def react_post(request, post_id):
             react.save()
     return redirect('post_detail', post_id = post.id)
 def add_reply(request, post_id, comment_id):
+    post = get_object_or_404(Post, id=post_id)
+    parent_comment = get_object_or_404(Comment, id=comment_id)
     if request.method == 'POST':
-        comment = get_object_or_404(Comment, id=comment_id)
-        content = request.POST.get('content')
-        if content:
-            Reply.objects.create(comment=comment, author=request.user, content=content)
-        return redirect('post_detail', post_id=post_id)
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.author = request.user
+            reply.post = post
+            reply.parent = parent_comment
+            # Thêm @username vào nội dung
+            reply.content = f"@{parent_comment.author.username} {form.cleaned_data['content']}"
+            reply.save()
+            return redirect('post_detail', post_id=post.id)
+    return redirect('post_detail', post_id=post.id)
 def delete_reply(request, post_id, reply_id):
     reply = get_object_or_404(Reply, id = reply_id)
     if request.user != reply.author:
@@ -111,5 +120,21 @@ def delete_comment(request, post_id, comment_id):
     else:
         messages.error(request, "Ban khong co quyen xoa!")
     return redirect ('post_detail', post_id = post_id)
-# def category_posts(request, category_id):
-#     category = get_object_or_404(Category, id = category_id)
+def edit_comment(request, post_id, comment_id):
+    comment = get_object_or_404(Comment, id = comment_id, author = request.user)
+    if request.method == 'POST':
+        new_content = request.POST.get('content')
+        if new_content:
+            comment.content = new_content
+            comment.save()
+        return redirect("post_detail", post_id= post_id)
+def edit_reply(request, post_id, reply_id):
+    reply = get_object_or_404(Reply, id = reply_id, comment__post_id=post_id, author = request.user)
+    if request.method == 'POST':
+        new_reply = request.POST.get('content')
+        if new_reply:
+            reply.content = new_reply
+            reply.save()
+        return redirect("post_detail", post_id = post_id)
+
+
