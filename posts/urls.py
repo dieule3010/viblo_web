@@ -7,8 +7,7 @@ from .views import add_comment
 from .views import react_post
 from .views import add_reply
 from .views import delete_comment
-
-
+from .views import delete_reply
 
 urlpatterns = [
     path('create/', create_post, name='create_post'),  # URL cho chức năng viết bài
@@ -19,5 +18,5 @@ urlpatterns = [
     path('post_detail/<int:post_id>/react', react_post, name='react_post'),
     path('post_detail/<int:post_id>/comment/<int:comment_id>/add_reply', add_reply, name='add_reply'),
     path('post_detail/<int:post_id>/comment/<int:comment_id>/delete_comment', delete_comment, name='delete_comment'),
- 
+    path('post_detail/<int:post_id>/reply/<int:reply_id>/delete_reply', delete_reply, name='delete_reply'),
 ]

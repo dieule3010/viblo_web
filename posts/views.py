@@ -7,63 +7,63 @@ from .models import Post
 from .models import Comment
 from .models import React
 from .models import Category
+from .models import Reply
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Q
-
+from django.http import HttpResponseForbidden
 
 @login_required #chỉ đăng nhập rồi mới được thực hiện
 def create_post(request):
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES)
         if form.is_valid():
-            post = form.save(commit=False)
+            post = form.save(commit=False) #không cam kết lưu ngay vào cơ sở dữ liệu, cho phép thiết lập thêm các trường
             post.author = request.user  # Gán tác giả là người dùng hiện tại
             post.save()
             return redirect('post_list')  # Chuyển hướng về trang chủ hoặc trang bài viết vừa tạo
     else:
-        form = PostForm()
+        form = PostForm() #nếu yêu cầu không phải là Post thì sẽ tạo một form trống cho người dùng điền vào
     return render(request, 'create_post.html', {'form': form})
 def post_list(request):
-    search_query = request.GET.get('search', '')
-    category_id = request.GET.get('category', '')
+    search_query = request.GET.get('search', '') # lấy giá trị tìm kiếm của user
+    category_id = request.GET.get('category', '') # lấy thông tin lọc của danh mục
 
     # Filter posts by search query and category
     posts = Post.objects.all()
-    if search_query:
+    if search_query: #Dùng Q để kết hợp các điều kiện tìm kiếm cho cả title và content
         posts = posts.filter(Q(title__icontains=search_query) | Q(content__icontains=search_query))
     if category_id:
-        posts = posts.filter(category_id=category_id)
+        posts = posts.filter(category_id=category_id) #Nếu có category_id, bài viết được lọc theo danh mục.
 
     # Initialize paginator only if posts exist
     if posts.exists():
-        paginator = Paginator(posts, 5)  # Hiển thị 5 bài viết mỗi trang
-        page_number = request.GET.get('page')
-        posts = paginator.get_page(page_number)
+        paginator = Paginator(posts, 4)  # Hiển thị 5 bài viết mỗi trang
+        page_number = request.GET.get('page', 1)
+        posts = paginator.get_page(page_number) #dùng để lấy các bài viết của trang hiện tại, page_number là số trang cần nhập, nếu số trang nhập lớn hơn hiện có, thì trả về trang cuối cùng
     else:
         posts = None  # Nếu không có bài viết, gán posts là None
 
     # Pass categories to the template for the filter dropdown
-    categories = Category.objects.all()
+    categories = Category.objects.all() # lấy tất cả các danh mục
 
     return render(request, 'post_list.html', {
         'posts': posts,
         'categories': categories
     })
 def post_detail(request, post_id):
-    post = get_object_or_404(Post, id = post_id)
-    comments = post.comments.filter(parent=None)
-    like_count = post.reacts.filter(react_type='like').count()
-    dislike_count = post.reacts.filter(react_type='dislike').count()
-
-    return render(request, 'post_detail.html', {
+    post = get_object_or_404(Post, id=post_id)
+    comments = post.comments.filter(parent__isnull=True)  # Chỉ lấy các comments chính, không bao gồm reply
+    like_count = post.reactions.filter(react_type='like').count()
+    dislike_count = post.reactions.filter(react_type='dislike').count()
+    context = {
         'post': post,
         'comments': comments,
         'like_count': like_count,
         'dislike_count': dislike_count,
-    })
-    return render(request, 'post_detail.html', {'post': post})
+    }
+    return render(request, 'post_detail.html', context)
 def delete_post(request, post_id):
     post = get_object_or_404(Post, id = post_id)
     if request.method == 'POST':
@@ -75,12 +75,12 @@ def add_comment(request, post_id):
     post = get_object_or_404(Post, id = post_id)
     content = request.POST.get('content')
     if content:
-        Comment.objects.create(post = post, author = request.user, content = content)
+        Comment.objects.create(post = post, author = request.user, content = content) # hàm tạo một đối tượng Comment và lưu vào cơ sở dữ liệu.
     return redirect('post_detail', post_id = post.id)
 def react_post(request, post_id):
-    post = get_object_or_404(Post, id = post_id)
-    react_type = request.POST.get('react_type') #lấy nội dung từ cơ sở dữ liệu
-    #kiểm tra người dùng react trước đó
+    post = get_object_or_404(Post, id = post_id) #lấy bài viết
+    react_type = request.POST.get('react_type') #lấy loại phản ứng từ form gửi lên
+    #kiểm tra người dùng react trước đó, kiểm tra xem đã react bài viết chưa
     react, created = React.objects.get_or_create(post = post, user = request.user, defaults = {'react_type': react_type})
     #nếu đã react thì cập nhật lại react
     if not created:
@@ -91,13 +91,18 @@ def react_post(request, post_id):
             react.save()
     return redirect('post_detail', post_id = post.id)
 def add_reply(request, post_id, comment_id):
-    post = get_object_or_404(Post, id=post_id)
-    parent_comment = get_object_or_404(Comment, id=comment_id)
-    content = request.POST.get('content')
-    if content:
-        # Lưu reply với comment cha
-        Comment.objects.create(post=post, author=request.user, content=content, parent=parent_comment)
-    return redirect('post_detail', post_id=post.id)
+    if request.method == 'POST':
+        comment = get_object_or_404(Comment, id=comment_id)
+        content = request.POST.get('content')
+        if content:
+            Reply.objects.create(comment=comment, author=request.user, content=content)
+        return redirect('post_detail', post_id=post_id)
+def delete_reply(request, post_id, reply_id):
+    reply = get_object_or_404(Reply, id = reply_id)
+    if request.user != reply.author:
+        return HttpResponseForbidden("Ban khong co quyen xoa")
+    reply.delete()
+    return redirect('post_detail', post_id = post_id)
 def delete_comment(request, post_id, comment_id):
     comment = get_object_or_404(Comment, id = comment_id, post_id = post_id)
     if request.user == comment.author:

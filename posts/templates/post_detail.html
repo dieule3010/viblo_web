@@ -59,7 +59,16 @@
                                 <p><strong>{{ reply.author.username }}</strong>: {{ reply.content }}</p>
                                 <p class="text-muted mb-0"><small>{{ reply.created_at }}</small></p>
                             </div>
-                        </li>
+
+                        {% if reply.author == request.user %}
+                        <form action="{% url 'delete_reply' post.id reply.id %}" method="post" class="d-inline-block">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm rounded" onclick="return confirm('Bạn có chắc chắn muốn xóa reply này?');">
+                                <i class="fas fa-trash-alt"></i> Xóa
+                            </button>
+                        </form>
+                    {% endif %}
+                </li>
                     {% endfor %}
                 </ul>
             </li>
