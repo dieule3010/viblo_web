@@ -14,9 +14,13 @@ from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, authenticate
 
-@login_required #chỉ đăng nhập rồi mới được thực hiện
+
+@login_required(login_url='login') #chỉ đăng nhập rồi mới được thực hiện
 def create_post(request):
+
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES)
         if form.is_valid():
@@ -26,13 +30,14 @@ def create_post(request):
             return redirect('post_list')  # Chuyển hướng về trang chủ hoặc trang bài viết vừa tạo
     else:
         form = PostForm() #nếu yêu cầu không phải là Post thì sẽ tạo một form trống cho người dùng điền vào
-    return render(request, 'create_post.html', {'form': form})
+        categories = Category.objects.all()
+    return render(request, 'create_post.html', {'form': form, 'categories': categories} )
 def post_list(request):
     search_query = request.GET.get('search', '') # lấy giá trị tìm kiếm của user
     category_id = request.GET.get('category', '') # lấy thông tin lọc của danh mục
 
     # Filter posts by search query and category
-    posts = Post.objects.all()
+    posts = Post.objects.all().order_by('-created_at')
     if search_query: #Dùng Q để kết hợp các điều kiện tìm kiếm cho cả title và content
         posts = posts.filter(Q(title__icontains=search_query) | Q(content__icontains=search_query))
     if category_id:
@@ -67,10 +72,9 @@ def post_detail(request, post_id):
     return render(request, 'post_detail.html', context)
 def delete_post(request, post_id):
     post = get_object_or_404(Post, id = post_id)
-    if request.method == 'POST':
-        post.delete()
-        messages.success(request,  "Bài viết đã được xóa thành công.")
-        return redirect('post_list')
+    if request.user != post.author:
+        return HttpResponseForbidden("Ban khong co quyen xoa bai viet nay")
+    post.delete()
     return render (request, 'delete_confirm.html', {'post': post})
 def add_comment(request, post_id):
     post = get_object_or_404(Post, id = post_id)
@@ -93,18 +97,14 @@ def react_post(request, post_id):
     return redirect('post_detail', post_id = post.id)
 def add_reply(request, post_id, comment_id):
     post = get_object_or_404(Post, id=post_id)
-    parent_comment = get_object_or_404(Comment, id=comment_id)
+    comment = get_object_or_404(Comment, id=comment_id)
+
     if request.method == 'POST':
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            reply = form.save(commit=False)
-            reply.author = request.user
-            reply.post = post
-            reply.parent = parent_comment
-            # Thêm @username vào nội dung
-            reply.content = f"@{parent_comment.author.username} {form.cleaned_data['content']}"
-            reply.save()
+        content = request.POST.get('content')
+        if content:
+            reply = Reply.objects.create(content=content, author=request.user, comment=comment)
             return redirect('post_detail', post_id=post.id)
+
     return redirect('post_detail', post_id=post.id)
 def delete_reply(request, post_id, reply_id):
     reply = get_object_or_404(Reply, id = reply_id)

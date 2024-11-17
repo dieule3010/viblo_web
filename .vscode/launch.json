@@ -1,7 +1,4 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
@@ -13,7 +10,9 @@
       ],
       "django": true,
       "autoStartBrowser": false,
-      "program": "${workspaceFolder}\\manage.py"
+      "program": "${workspaceFolder}/manage.py",
+      "console": "integratedTerminal",  // Thêm phần này để xem log debug trong terminal của VS Code.
+      "justMyCode": false  // Thêm phần này để debug cả mã nguồn bên ngoài project Django (chẳng hạn thư viện third-party nếu có).
     }
   ]
 }

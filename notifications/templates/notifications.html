@@ -1,0 +1,12 @@
+<!-- notification/templates/notification/notifications.html -->
+<div class="notifications">
+    <h3>Thông báo của tôi</h3>
+    {% for notification in notifications %}
+        <div class="notification {% if notification.is_read %}read{% else %}unread{% endif %}">
+            <p>{{ notification.message }}</p>
+            <span>{{ notification.created_at }}</span>
+        </div>
+    {% empty %}
+        <p>Không có thông báo nào.</p>
+    {% endfor %}
+</div>

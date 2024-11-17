@@ -1,4 +1,5 @@
 from django.urls import path
+from .import views
 from .views import (
     create_post,
     post_list,
@@ -12,6 +13,7 @@ from .views import (
     edit_reply,
     edit_comment
 )
+from django.contrib.auth.views import LoginView
 
 urlpatterns = [
     path('create/', create_post, name='create_post'),  # URL cho chức năng viết bài
@@ -26,4 +28,5 @@ urlpatterns = [
     path('post_detail/<int:post_id>/reply/<int:reply_id>/delete_reply', delete_reply, name='delete_reply'),
     path('post_detail/<int:post_id>/reply/<int:reply_id>/edit_reply', edit_reply, name='edit_reply'),
     path('post_detail/<int:post_id>/comment/<int:comment_id>/edit_comment', edit_comment, name='edit_comment'),
+
 ]

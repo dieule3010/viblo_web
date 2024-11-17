@@ -1,23 +1,33 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.urls import reverse
+from datetime import datetime, date
+from ckeditor.fields import RichTextField
 
 class Category(models.Model):
-  name = models.CharField(max_length=100, unique= True)
+  name = models.CharField(max_length=255, unique= True)
   description = models.TextField(blank= True, null = True)
   def __str__(self):
     return self.name
+  def get_absolute_url(self):
+    return reverse('home')
 
 class Post(models.Model):
+  CATEGORY_CHOICES = [
+        ('coding', 'Coding'),
+        ('entertainment', 'Entertainment'),
+        ('music', 'Music'),
+    ]
   title = models.CharField(max_length=200)  # Tiêu đề bài viết
   content =models.TextField()  # Nội dung bài viết
   author = models.ForeignKey(User, on_delete=models.CASCADE)  # Người viết bài
   created_at = models.DateTimeField(auto_now_add=True)  # Ngày tạo bài viết
   updated_at = models.DateTimeField(auto_now=True)  # Ngày cập nhật bài viết
   image = models.ImageField(upload_to='post_images/', blank=True, null=True)
-  tags = models.CharField(max_length=255)
-  category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='posts' )
-
+  is_approved = models.BooleanField(default= False)
+  scheduled_date = models.DateTimeField(null=True, blank=True)
+  likes = models.IntegerField(default= 0)
+  category = models.CharField(max_length= 255, default='coding')
   def __str__(self):
     return self.title  # Trả về tiêu đề bài viết
 

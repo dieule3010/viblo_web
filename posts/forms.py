@@ -5,18 +5,20 @@ from .models import Comment
 from. models import Tag
 from. models import Category
 
-
+choices = [('coding', 'coding'), ('entertainment', 'entertainment'), ('music', 'music')]
+# choices = Category.objects.all().values_list('name','name')
 class PostForm(forms.ModelForm):
-    category = forms.ModelChoiceField(
-        queryset=Category.objects.all(),
+    category = forms.Select(choices= choices, attrs={'class': 'form-control'}),
+    tags = forms.CharField(
+        max_length=255,
         required=False,
-        empty_label="Chọn danh mục",
-        label="Danh mục"
+        label="Tags",
+        widget=forms.TextInput(attrs={'placeholder': 'Enter tags, separated by commas'})
     )
 
     class Meta:
         model = Post
-        fields = ['title', 'content', 'image', 'category']  # Bao gồm trường image
+        fields = ['title', 'content', 'image', 'category', 'tags']
 class CategoryForm(forms.ModelForm):
     pass
 class CommentForm(forms.ModelForm):
